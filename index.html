@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard V2 - Prométhée (v2)</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/lib/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="static/css/style_v2.css?v=2" />
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/infographic.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="Entreprise/Logo/Créer un logo professionnel et institutionnel pour un bureau d’études spécialisé (1).jpeg" alt="PyroPixel logo" class="brand-logo" />
+      <span class="brand-text">PyroPixel — Veille incendies &amp; cartographie</span>
+    </div>
+  </header>
+
+  <!-- Tabs moved to sidebar -->
+
+  <div id="appRoot">
+    <div class="app-grid">
+          <aside class="sidebar">
+        <div class="sidebar-inner">
+          <div class="logo">Sommaire</div>
+          <nav class="nav" role="tablist" aria-label="Navigation Principale">
+            <button id="tabStudyBtn" class="nav-item active" role="tab" aria-selected="true">Selection</button>
+            <button id="tabVisualisationBtn" class="nav-item" role="tab" aria-selected="false">Visualisation</button>
+            <button id="tabResumeBtn" class="nav-item" role="tab" aria-selected="false">Chiffres</button>
+            <button id="tabAnalyticsBtn" class="nav-item" role="tab" aria-selected="false">Analyse</button>
+            <button id="tabAboutBtn" class="nav-item" role="tab" aria-selected="false">A propos</button>
+          </nav>
+        </div>
+      </aside>
+
+      <main class="container">
+        <div id="mapFrame" class="persistent-map">
+          <div id="visualisationTab" class="map-panel">
+            <div id="map"></div>
+          </div>
+          <!-- Resume / Analytics / About panels occupy the same area as the map when shown -->
+          <div id="resumeTab" class="map-panel hidden">
+            <div class="card">
+              <h3>Résumé des indicateurs</h3>
+              <div class="kpi-row">
+                <div class="kpi-card"><div class="kpi-title">Incendies totaux</div><div id="resume_kpiIncendiesTotal" class="kpi-value">—</div></div>
+                <div class="kpi-card"><div class="kpi-title">Communes chargées</div><div id="resume_kpiCommunesCount" class="kpi-value">—</div></div>
+                <div class="kpi-card"><div class="kpi-title">Stations</div><div id="resume_kpiStationsTotal" class="kpi-value">—</div></div>
+              </div>
+              <div class="kpi-row" style="margin-top:12px;gap:12px;display:flex">
+                <div class="kpi-card" style="flex:1;min-width:180px;text-align:center">
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Répartition densité urbaine (2021)</div>
+                  <div id="kpiDensityClass" class="kpi-value">—</div>
+                </div>
+                <div class="kpi-card" style="flex:1;min-width:180px;text-align:center">
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Population municipale 2022</div>
+                  <div id="kpiPop2022" class="kpi-value">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- analyticsTab moved out of #mapFrame into main.container to dissolve map-panel wrapper -->
+          <div id="studyTab" class="map-panel hidden">
+            <div class="card" style="max-width:920px;margin:18px">
+              <div class="cell-header">
+                <div class="small">Sélectionner la commune :</div>
+                <div class="cell-controls">
+                  <button class="cell-export" title="Exporter PNG" aria-label="Exporter PNG">SVG</button>
+                  <button class="cell-csv" title="Exporter CSV" aria-label="Exporter CSV"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15V5a2 2 0 0 0-2-2H7L3 6v9a2 2 0 0 0 2 2h14"></path><path d="M7 10h7M7 14h7"></path></svg></button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <h2 id="loadedFile_study"></h2>
+                <div style="margin-top:6px">
+                  <div class="commune-input-row">
+                    <input id="communeInput" list="communeList" placeholder="Choisir commune ou saisir INSEE" class="data-select">
+                    <button id="resetViewBtn" class="default-view-btn" title="Recentrer la carte sur la vue par défaut">Défaut</button>
+                    <datalist id="communeList"><option value="Aiglun (04001)"></option><option value="Allemagne-en-Provence (04004)"></option><option value="Allons (04005)"></option><option value="Allos (04006)"></option><option value="Angles (04007)"></option><option value="Annot (04008)"></option><option value="Archail (04009)"></option><option value="Aubenas-les-Alpes (04012)"></option><option value="Aubignosc (04013)"></option><option value="Authon (04016)"></option><option value="Auzet (04017)"></option><option value="Banon (04018)"></option><option value="Barcelonnette (04019)"></option><option value="Barles (04020)"></option><option value="Barras (04021)"></option><option value="Barrême (04022)"></option><option value="Bayons (04023)"></option><option value="Beaujeu (04024)"></option><option value="Beauvezer (04025)"></option><option value="Bevons (04027)"></option><option value="Beynes (04028)"></option><option value="Blieux (04030)"></option><option value="Bras-d'Asse (04031)"></option><option value="Braux (04032)"></option><option value="Ubaye-Serre-Ponçon (04033)"></option><option value="La Brillanne (04034)"></option><option value="Brunet (04035)"></option><option value="Le Brusquet (04036)"></option><option value="Le Caire (04037)"></option><option value="Castellane (04039)"></option><option value="Le Castellard-Mélan (04040)"></option><option value="Le Castellet (04041)"></option><option value="Castellet-lès-Sausses (04042)"></option><option value="Val-de-Chalvagne (04043)"></option><option value="Céreste (04045)"></option><option value="Le Chaffaut-Saint-Jurson (04046)"></option><option value="Champtercier (04047)"></option><option value="Château-Arnoux-Saint-Auban (04049)"></option><option value="Châteaufort (04050)"></option><option value="Châteauneuf-Miravail (04051)"></option><option value="Châteauneuf-Val-Saint-Donat (04053)"></option><option value="Châteauredon (04054)"></option><option value="Chaudon-Norante (04055)"></option><option value="Clamensane (04057)"></option><option value="Claret (04058)"></option><option value="Clumanc (04059)"></option><option value="Colmars (04061)"></option><option value="La Condamine-Châtelard (04062)"></option><option value="Corbières-en-Provence (04063)"></option><option value="Cruis (04065)"></option><option value="Curbans (04066)"></option><option value="Curel (04067)"></option><option value="Dauphin (04068)"></option><option value="Demandolx (04069)"></option><option value="Digne-les-Bains (04070)"></option><option value="Draix (04072)"></option><option value="Enchastrayes (04073)"></option><option value="Entrages (04074)"></option><option value="Entrepierres (04075)"></option><option value="Entrevaux (04076)"></option><option value="Entrevennes (04077)"></option><option value="L'Escale (04079)"></option><option value="Esparron-de-Verdon (04081)"></option><option value="Estoublon (04084)"></option><option value="Faucon-du-Caire (04085)"></option><option value="Faucon-de-Barcelonnette (04086)"></option><option value="Fontienne (04087)"></option><option value="Forcalquier (04088)"></option><option value="Le Fugeret (04090)"></option><option value="Ganagobie (04091)"></option><option value="La Garde (04092)"></option><option value="Gigors (04093)"></option><option value="Gréoux-les-Bains (04094)"></option><option value="L'Hospitalet (04095)"></option><option value="Jausiers (04096)"></option><option value="La Javie (04097)"></option><option value="Lambruisse (04099)"></option><option value="Lardiers (04101)"></option><option value="Le Lauzet-Ubaye (04102)"></option><option value="Limans (04104)"></option><option value="Lurs (04106)"></option><option value="Majastres (04107)"></option><option value="Malijai (04108)"></option><option value="Mallefougasse-Augès (04109)"></option><option value="Mallemoisson (04110)"></option><option value="Mane (04111)"></option><option value="Manosque (04112)"></option><option value="Marcoux (04113)"></option><option value="Méailles (04115)"></option><option value="Les Mées (04116)"></option><option value="Melve (04118)"></option><option value="Val-d'Oronaye (04120)"></option><option value="Mézel (04121)"></option><option value="Mirabeau (04122)"></option><option value="Mison (04123)"></option><option value="Montagnac-Montpezat (04124)"></option><option value="Montclar (04126)"></option><option value="Montfort (04127)"></option><option value="Montfuron (04128)"></option><option value="Montlaux (04130)"></option><option value="Montsalier (04132)"></option><option value="Moriez (04133)"></option><option value="La Motte-du-Caire (04134)"></option><option value="Moustiers-Sainte-Marie (04135)"></option><option value="La Mure-Argens (04136)"></option><option value="Niozelles (04138)"></option><option value="Noyers-sur-Jabron (04139)"></option><option value="Les Omergues (04140)"></option><option value="Ongles (04141)"></option><option value="Oppedette (04142)"></option><option value="Oraison (04143)"></option><option value="La Palud-sur-Verdon (04144)"></option><option value="Peipin (04145)"></option><option value="Peyroules (04148)"></option><option value="Peyruis (04149)"></option><option value="Piégut (04150)"></option><option value="Pierrerue (04151)"></option><option value="Pierrevert (04152)"></option><option value="Pontis (04154)"></option><option value="Prads-Haute-Bléone (04155)"></option><option value="Puimichel (04156)"></option><option value="Puimoisson (04157)"></option><option value="Quinson (04158)"></option><option value="Redortiers (04159)"></option><option value="Reillanne (04160)"></option><option value="Méolans-Revel (04161)"></option><option value="Revest-des-Brousses (04162)"></option><option value="Revest-du-Bion (04163)"></option><option value="Revest-Saint-Martin (04164)"></option><option value="Riez (04166)"></option><option value="La Robine-sur-Galabre (04167)"></option><option value="La Rochegiron (04169)"></option><option value="La Rochette (04170)"></option><option value="Rougon (04171)"></option><option value="Roumoules (04172)"></option><option value="Saint-André-les-Alpes (04173)"></option><option value="Saint-Benoît (04174)"></option><option value="Sainte-Croix-à-Lauze (04175)"></option><option value="Sainte-Croix-du-Verdon (04176)"></option><option value="Hautes-Duyes (04177)"></option><option value="Saint-Étienne-les-Orgues (04178)"></option><option value="Saint-Geniez (04179)"></option><option value="Saint-Jacques (04180)"></option><option value="Saint-Jeannet (04181)"></option><option value="Saint-Julien-d'Asse (04182)"></option><option value="Saint-Julien-du-Verdon (04183)"></option><option value="Saint-Jurs (04184)"></option><option value="Saint-Laurent-du-Verdon (04186)"></option><option value="Saint-Lions (04187)"></option><option value="Saint-Maime (04188)"></option><option value="Saint-Martin-de-Brômes (04189)"></option><option value="Saint-Martin-les-Eaux (04190)"></option><option value="Saint-Martin-lès-Seyne (04191)"></option><option value="Saint-Michel-l'Observatoire (04192)"></option><option value="Saint-Paul-sur-Ubaye (04193)"></option><option value="Saint-Pierre (04194)"></option><option value="Saint-Pons (04195)"></option><option value="Sainte-Tulle (04197)"></option><option value="Saint-Vincent-sur-Jabron (04199)"></option><option value="Salignac (04200)"></option><option value="Saumane (04201)"></option><option value="Sausses (04202)"></option><option value="Selonnet (04203)"></option><option value="Senez (04204)"></option><option value="Seyne (04205)"></option><option value="Sigonce (04206)"></option><option value="Sigoyer (04207)"></option><option value="Simiane-la-Rotonde (04208)"></option><option value="Sisteron (04209)"></option><option value="Soleilhas (04210)"></option><option value="Sourribes (04211)"></option><option value="Tartonne (04214)"></option><option value="Thèze (04216)"></option><option value="Thoard (04217)"></option><option value="Thorame-Basse (04218)"></option><option value="Thorame-Haute (04219)"></option><option value="Turriers (04222)"></option><option value="Ubraye (04224)"></option><option value="Uvernet-Fours (04226)"></option><option value="Vachères (04227)"></option><option value="Valavoire (04228)"></option><option value="Valbelle (04229)"></option><option value="Valensole (04230)"></option><option value="Valernes (04231)"></option><option value="Vaumeilh (04233)"></option><option value="Venterol (04234)"></option><option value="Verdaches (04235)"></option><option value="Vergons (04236)"></option><option value="Le Vernet (04237)"></option><option value="Villars-Colmars (04240)"></option><option value="Villemus (04241)"></option><option value="Villeneuve (04242)"></option><option value="Volonne (04244)"></option><option value="Volx (04245)"></option><option value="Abriès-Ristolas (05001)"></option><option value="Aiguilles (05003)"></option><option value="Ancelle (05004)"></option><option value="L'Argentière-la-Bessée (05006)"></option><option value="Arvieux (05007)"></option><option value="Aspremont (05008)"></option><option value="Aspres-lès-Corps (05009)"></option><option value="Aspres-sur-Buëch (05010)"></option><option value="Avançon (05011)"></option><option value="Baratier (05012)"></option><option value="Barcillonnette (05013)"></option><option value="Barret-sur-Méouge (05014)"></option><option value="La Bâtie-Montsaléon (05016)"></option><option value="La Bâtie-Neuve (05017)"></option><option value="La Bâtie-Vieille (05018)"></option><option value="La Beaume (05019)"></option><option value="Bréziers (05022)"></option><option value="Briançon (05023)"></option><option value="Valdoule (05024)"></option><option value="Ceillac (05026)"></option><option value="Cervières (05027)"></option><option value="Chabestan (05028)"></option><option value="Champcella (05031)"></option><option value="Chanousse (05033)"></option><option value="Châteauneuf-d'Oze (05035)"></option><option value="Châteauroux-les-Alpes (05036)"></option><option value="Châteauvieux (05037)"></option><option value="Château-Ville-Vieille (05038)"></option><option value="Aubessagne (05039)"></option><option value="Chorges (05040)"></option><option value="Crévoux (05044)"></option><option value="Crots (05045)"></option><option value="Embrun (05046)"></option><option value="Éourres (05047)"></option><option value="L'Épine (05048)"></option><option value="Esparron (05049)"></option><option value="Espinasses (05050)"></option><option value="Étoile-Saint-Cyrice (05051)"></option><option value="Eygliers (05052)"></option><option value="La Faurie (05055)"></option><option value="Forest-Saint-Julien (05056)"></option><option value="Fouillouse (05057)"></option><option value="Freissinières (05058)"></option><option value="La Freissinouse (05059)"></option><option value="Furmeyer (05060)"></option><option value="Gap (05061)"></option><option value="Le Glaizil (05062)"></option><option value="La Grave (05063)"></option><option value="La Chapelle-en-Valgaudémar (05064)"></option><option value="Guillestre (05065)"></option><option value="La Haute-Beaume (05066)"></option><option value="Jarjayes (05068)"></option><option value="Laragne-Montéglin (05070)"></option><option value="Laye (05072)"></option><option value="Lazer (05073)"></option><option value="Manteyer (05075)"></option><option value="Méreuil (05076)"></option><option value="Molines-en-Queyras (05077)"></option><option value="Monêtier-Allemont (05078)"></option><option value="Le Monêtier-les-Bains (05079)"></option><option value="Montbrand (05080)"></option><option value="Montclus (05081)"></option><option value="Mont-Dauphin (05082)"></option><option value="Montgenèvre (05085)"></option><option value="Montjay (05086)"></option><option value="Montmaur (05087)"></option><option value="Montrond (05089)"></option><option value="La Motte-en-Champsaur (05090)"></option><option value="Moydans (05091)"></option><option value="Neffes (05092)"></option><option value="Névache (05093)"></option><option value="Le Noyer (05095)"></option><option value="Orcières (05096)"></option><option value="Orpierre (05097)"></option><option value="Oze (05099)"></option><option value="Vallouise-Pelvoux (05101)"></option><option value="La Piarre (05102)"></option><option value="Le Poët (05103)"></option><option value="Poligny (05104)"></option><option value="Prunières (05106)"></option><option value="Puy-Saint-André (05107)"></option><option value="Puy-Saint-Eusèbe (05108)"></option><option value="Puy-Saint-Vincent (05110)"></option><option value="Puy-Sanières (05111)"></option><option value="Rabou (05112)"></option><option value="Rambaud (05113)"></option><option value="Remollon (05115)"></option><option value="Réotier (05116)"></option><option value="Ribeyret (05117)"></option><option value="Val-Buëch-Méouge (05118)"></option><option value="Risoul (05119)"></option><option value="Rochebrune (05121)"></option><option value="La Roche-de-Rame (05122)"></option><option value="La Roche-des-Arnauds (05123)"></option><option value="La Rochette (05124)"></option><option value="Rosans (05126)"></option><option value="Rousset (05127)"></option><option value="Saint-André-d'Embrun (05128)"></option><option value="Saint-André-de-Rosans (05129)"></option><option value="Saint-Apollinaire (05130)"></option><option value="Saint-Auban-d'Oze (05131)"></option><option value="Saint-Bonnet-en-Champsaur (05132)"></option><option value="Saint-Chaffrey (05133)"></option><option value="Saint-Clément-sur-Durance (05134)"></option><option value="Sainte-Colombe (05135)"></option><option value="Saint-Crépin (05136)"></option><option value="Saint-Étienne-le-Laus (05140)"></option><option value="Saint-Firmin (05142)"></option><option value="Saint-Jean-Saint-Nicolas (05145)"></option><option value="Saint-Julien-en-Beauchêne (05146)"></option><option value="Saint-Julien-en-Champsaur (05147)"></option><option value="Saint-Léger-les-Mélèzes (05149)"></option><option value="Saint-Martin-de-Queyrières (05151)"></option><option value="Saint-Maurice-en-Valgodemard (05152)"></option><option value="Saint-Michel-de-Chaillol (05153)"></option><option value="Saint-Pierre-d'Argençon (05154)"></option><option value="Saint-Pierre-Avez (05155)"></option><option value="Saint-Sauveur (05156)"></option><option value="Saint-Véran (05157)"></option><option value="Le Saix (05158)"></option><option value="Salérans (05160)"></option><option value="La Salle-les-Alpes (05161)"></option><option value="La Saulce (05162)"></option><option value="Le Sauze-du-Lac (05163)"></option><option value="Savines-le-Lac (05164)"></option><option value="Savournon (05165)"></option><option value="Serres (05166)"></option><option value="Sigottier (05167)"></option><option value="Sigoyer (05168)"></option><option value="Sorbiers (05169)"></option><option value="Tallard (05170)"></option><option value="Théus (05171)"></option><option value="Trescléoux (05172)"></option><option value="Upaix (05173)"></option><option value="Val-des-Prés (05174)"></option><option value="Valserres (05176)"></option><option value="Vars (05177)"></option><option value="Ventavon (05178)"></option><option value="Veynes (05179)"></option><option value="Les Vigneaux (05180)"></option><option value="Villar-d'Arêne (05181)"></option><option value="Villar-Loubière (05182)"></option><option value="Villar-Saint-Pancrace (05183)"></option><option value="Vitrolles (05184)"></option><option value="Aiglun (06001)"></option><option value="Amirat (06002)"></option><option value="Andon (06003)"></option><option value="Antibes (06004)"></option><option value="Ascros (06005)"></option><option value="Aspremont (06006)"></option><option value="Auribeau-sur-Siagne (06007)"></option><option value="Auvare (06008)"></option><option value="Bairols (06009)"></option><option value="Le Bar-sur-Loup (06010)"></option><option value="Beaulieu-sur-Mer (06011)"></option><option value="Beausoleil (06012)"></option><option value="Belvédère (06013)"></option><option value="Bendejun (06014)"></option><option value="Berre-les-Alpes (06015)"></option><option value="Beuil (06016)"></option><option value="Bézaudun-les-Alpes (06017)"></option><option value="Biot (06018)"></option><option value="Blausasc (06019)"></option><option value="La Bollène-Vésubie (06020)"></option><option value="Bonson (06021)"></option><option value="Bouyon (06022)"></option><option value="Breil-sur-Roya (06023)"></option><option value="Briançonnet (06024)"></option><option value="Le Broc (06025)"></option><option value="Cabris (06026)"></option><option value="Cagnes-sur-Mer (06027)"></option><option value="Caille (06028)"></option><option value="Cannes (06029)"></option><option value="Le Cannet (06030)"></option><option value="Cantaron (06031)"></option><option value="Cap-d'Ail (06032)"></option><option value="Carros (06033)"></option><option value="Castagniers (06034)"></option><option value="Castellar (06035)"></option><option value="Castillon (06036)"></option><option value="Caussols (06037)"></option><option value="Châteauneuf-Grasse (06038)"></option><option value="Châteauneuf-Villevieille (06039)"></option><option value="Cipières (06041)"></option><option value="Clans (06042)"></option><option value="Coaraze (06043)"></option><option value="La Colle-sur-Loup (06044)"></option><option value="Collongues (06045)"></option><option value="Colomars (06046)"></option><option value="Conségudes (06047)"></option><option value="Contes (06048)"></option><option value="Courmes (06049)"></option><option value="Coursegoules (06050)"></option><option value="La Croix-sur-Roudoule (06051)"></option><option value="Cuébris (06052)"></option><option value="Daluis (06053)"></option><option value="Drap (06054)"></option><option value="Duranus (06055)"></option><option value="Entraunes (06056)"></option><option value="L'Escarène (06057)"></option><option value="Escragnolles (06058)"></option><option value="Èze (06059)"></option><option value="Falicon (06060)"></option><option value="Les Ferres (06061)"></option><option value="Fontan (06062)"></option><option value="Gars (06063)"></option><option value="Gattières (06064)"></option><option value="La Gaude (06065)"></option><option value="Gilette (06066)"></option><option value="Gorbio (06067)"></option><option value="Gourdon (06068)"></option><option value="Grasse (06069)"></option><option value="Gréolières (06070)"></option><option value="Guillaumes (06071)"></option><option value="Ilonse (06072)"></option><option value="Isola (06073)"></option><option value="Lantosque (06074)"></option><option value="Levens (06075)"></option><option value="Lieuche (06076)"></option><option value="Lucéram (06077)"></option><option value="Malaussène (06078)"></option><option value="Mandelieu-la-Napoule (06079)"></option><option value="Marie (06080)"></option><option value="Le Mas (06081)"></option><option value="Massoins (06082)"></option><option value="Menton (06083)"></option><option value="Mouans-Sartoux (06084)"></option><option value="Mougins (06085)"></option><option value="Moulinet (06086)"></option><option value="Les Mujouls (06087)"></option><option value="Nice (06088)"></option><option value="Opio (06089)"></option><option value="Pégomas (06090)"></option><option value="Peille (06091)"></option><option value="Peillon (06092)"></option><option value="La Penne (06093)"></option><option value="Péone (06094)"></option><option value="Peymeinade (06095)"></option><option value="Pierlas (06096)"></option><option value="Pierrefeu (06097)"></option><option value="Puget-Rostang (06098)"></option><option value="Puget-Théniers (06099)"></option><option value="Revest-les-Roches (06100)"></option><option value="Rigaud (06101)"></option><option value="Rimplas (06102)"></option><option value="Roquebillière (06103)"></option><option value="Roquebrune-Cap-Martin (06104)"></option><option value="Roquefort-les-Pins (06105)"></option><option value="Roquestéron (06106)"></option><option value="La Roque-en-Provence (06107)"></option><option value="La Roquette-sur-Siagne (06108)"></option><option value="La Roquette-sur-Var (06109)"></option><option value="Roubion (06110)"></option><option value="Roure (06111)"></option><option value="Le Rouret (06112)"></option><option value="Sainte-Agnès (06113)"></option><option value="Saint-André-de-la-Roche (06114)"></option><option value="Saint-Antonin (06115)"></option><option value="Saint-Auban (06116)"></option><option value="Saint-Blaise (06117)"></option></datalist>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Basemap selector -->
+            <div class="card" style="max-width:920px;margin:18px">
+              <div class="cell-header">
+                <div class="small">Couche de fond</div>
+                <div class="cell-controls">
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage">Basemap</button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-top:6px">
+                  <div style="flex:1 1 260px;min-width:200px">
+                    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Choisir un fond de carte</label>
+                    <select id="selectBasemap" class="data-select">
+                      <option value="osm">OSM Standard</option>
+                      <option value="sat">Satellite</option>
+                      <option value="topo">Topographique</option>
+                      <option value="ign">IGN (orthos / scan)</option>
+                    </select>
+                  </div>
+                  <div style="flex:1 1 260px;min-width:200px">
+                    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Choisir une couche</label>
+                    <select id="selectOverlay" class="data-select"><option value="">-- Aucune --</option></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Additional selectors placeholder: département / massif / pixel -->
+            <div class="card" style="max-width:920px;margin:18px">
+              <div class="cell-header">
+                <div class="small">Sélection avancée</div>
+                <div class="cell-controls">
+                  <button class="cell-csv" title="Exporter CSV" aria-label="Exporter CSV"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15V5a2 2 0 0 0-2-2H7L3 6v9a2 2 0 0 0 2 2h14"></path><path d="M7 10h7M7 14h7"></path></svg></button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <div style="display:flex;flex-wrap:wrap;gap:12px">
+                  <div style="flex:1;min-width:220px">
+                    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Par département</label>
+                    <select id="selectDepartement" class="data-select">
+                      <option value="">-- Choisir département --</option>
+                      <option value="04">04 - Alpes-de-Haute-Provence</option>
+                      <option value="05">05 - Hautes-Alpes</option>
+                      <option value="06">06 - Alpes-Maritimes</option>
+                      <option value="13">13 - Bouches-du-Rhône</option>
+                      <option value="83">83 - Var</option>
+                      <option value="84">84 - Vaucluse</option>
+                    </select>
+                  </div>
+                  <div style="flex:1;min-width:220px">
+                    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Par massif</label>
+                    <select id="selectMassif" class="data-select">
+                      <option value="">-- Choisir massif --</option>
+                      <option value="mercantour">Mercantour</option>
+                      <option value="alpilles">Alpilles</option>
+                      <option value="verdon">Verdon</option>
+                      <option value="esterel">Estérel</option>
+                    </select>
+                  </div>
+                  <div style="flex:1;min-width:220px">
+                    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Par pixel (grille)</label>
+                    <input id="selectPixel" placeholder="x,y ou coordonnées" class="data-select" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="aboutTab" class="map-panel hidden">
+            <!-- inlined About content (removed .card.about-card wrapper) -->
+              <h2>À propos de PyroPixel</h2>
+
+              <section>
+                <h3>Présentation</h3>
+                <p style="text-align:justify;text-justify:inter-word;">PyroPixel est un bureau d'études spécialisé dans les systèmes d'information géographique, la cartographie et la modélisation des risques d'incendie. Nous accompagnons les collectivités, les services de protection civile et les bureaux d'études en fournissant des analyses spatiales avancées, des cartes thématiques et des supports opérationnels adaptés aux besoins terrain. Nos prestations couvrent l'ensemble du cycle projet : collecte et harmonisation des données, inventaires terrain, modélisation du risque, production de livrables géospatiaux et rapports techniques, ainsi que des formations dédiées aux outils SIG. Nous privilégions des méthodologies reproductibles et transparentes (flux SIG documentés, métadonnées complètes, validation croisée des modèles) pour garantir des résultats robustes et directement exploitables opérationnellement. Les livrables courants incluent des GeoPackages normalisés, couches thématiques prêtes à l'usage, cartes d'intervention et scénarios de propagation paramétrables, ainsi que des tableaux de bord synthétiques pour le suivi temporel des événements. PyroPixel assure également la montée en compétences des équipes locales par des sessions pratiques sur outils libres et propriétaires, l'automatisation des traitements et l'intégration dans des infrastructures cartographiques (serveurs WMS/WFS, bases PostGIS). Basée en région PACA, l'équipe intervient nationalement et s'attache à adapter chaque mission au contexte territorial, aux contraintes opérationnelles et aux exigences réglementaires du commanditaire.</p>
+              </section>
+
+              <section>
+                <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap">
+                  <div style="flex:1;min-width:300px">
+                    <h3>Services principaux</h3>
+                    <ul>
+                      <li>Études SIG et cartographie thématique</li>
+                      <li>Modélisation du risque feu et analyses spatiales</li>
+                      <li>Inventaires terrain (placettes, relevés) et saisie de données</li>
+                      <li>Traitement et harmonisation de données géospatiales</li>
+                      <li>Formations et ateliers techniques</li>
+                    </ul>
+                  </div>
+
+                  <div style="flex:1;min-width:300px">
+                    <h3>Équipe (rôles)</h3>
+                    <ul>
+                      <li>Directeur</li>
+                      <li>Responsable scientifique</li>
+                      <li>Responsable SIG</li>
+                      <li>Responsable risques</li>
+                      <li>Coordinateur terrain</li>
+                      <li>Spécialiste feux</li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+
+              <div style="margin-top:18px;text-align:center">
+                <strong>Organigramme :</strong>
+                <div style="margin-top:8px">
+                  <img src="Entreprise/Organigramme/organigramme_groupement_feu_foret_paca.svg" alt="Organigramme Atelier" style="max-width:100%;height:auto;border:1px solid rgba(0,0,0,0.06);border-radius:8px;display:block;margin:0 auto" />
+                </div>
+              </div>
+
+              <section>
+                <h3>Tarifs — Grille indicative</h3>
+                <p>Dernière mise à jour : 2026-01-28 — Contact devis : Thomas Damore — thomas.damore974@gmail.com</p>
+                <div style="overflow:auto;border:1px solid rgba(0,0,0,0.06);border-radius:8px">
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                  <thead>
+                    <tr style="background:#f8f8f8;text-align:left">
+                      <th style="padding:8px;border-bottom:1px solid rgba(0,0,0,0.06)">Code</th>
+                      <th style="padding:8px;border-bottom:1px solid rgba(0,0,0,0.06)">Service</th>
+                      <th style="padding:8px;border-bottom:1px solid rgba(0,0,0,0.06)">Unité</th>
+                      <th style="padding:8px;border-bottom:1px solid rgba(0,0,0,0.06)">Prix réf (€ HT)</th>
+                      <th style="padding:8px;border-bottom:1px solid rgba(0,0,0,0.06)">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td style="padding:8px;border-top:1px solid #fff">C-01</td><td style="padding:8px;border-top:1px solid #fff">Diagnostic initial — revue documentaire + réunion de cadrage</td><td style="padding:8px;border-top:1px solid #fff">Forfait</td><td style="padding:8px;border-top:1px solid #fff">450</td><td style="padding:8px;border-top:1px solid #fff">Inclut compte-rendu de cadrage</td></tr>
+                    <tr><td style="padding:8px">S-01</td><td style="padding:8px">Étude SIG — cartographie thématique (livrables GeoPackage / Shapefile)</td><td style="padding:8px">Par couche</td><td style="padding:8px">350</td><td style="padding:8px">+80€/h traitements supplémentaires; livraison vectorielle + métadata</td></tr>
+                    <tr><td style="padding:8px">M-01</td><td style="padding:8px">Modélisation du risque feu (calibration + simulation)</td><td style="padding:8px">Projet</td><td style="padding:8px">3 200</td><td style="padding:8px">Inclut rapport technique</td></tr>
+                    <tr><td style="padding:8px">T-01</td><td style="padding:8px">Inventaire terrain (placette)</td><td style="padding:8px">Par placette</td><td style="padding:8px">45</td><td style="padding:8px">Minimum facturable : 1 journée terrain</td></tr>
+                    <tr><td style="padding:8px">T-02</td><td style="padding:8px">Inventaire terrain (équipe 2 pers.)</td><td style="padding:8px">Jour d'équipe</td><td style="padding:8px">650</td><td style="padding:8px">Inclut saisie initiale des données</td></tr>
+                    <tr><td style="padding:8px">D-01</td><td style="padding:8px">Traitement données — nettoyage, harmonisation, QA/QC</td><td style="padding:8px">Heure</td><td style="padding:8px">60</td><td style="padding:8px">Forfait min. 4 h; tarifs réduits pour gros volumes</td></tr>
+                    <tr><td style="padding:8px">R-01</td><td style="padding:8px">Rédaction rapport technique (incl. annexes)</td><td style="padding:8px">Page (indicatif)</td><td style="padding:8px">60</td><td style="padding:8px">Mise en page incluse</td></tr>
+                    <tr><td style="padding:8px">G-01</td><td style="padding:8px">Cartes pour impression (A3/A2)</td><td style="padding:8px">Par carte</td><td style="padding:8px">180</td><td style="padding:8px">+40€/h retouches; fournir logos & chartes</td></tr>
+                    <tr><td style="padding:8px">A-01</td><td style="padding:8px">Atelier / Formation (sur site ou en ligne)</td><td style="padding:8px">Journée / pers.</td><td style="padding:8px">420</td><td style="padding:8px">Supports fournis; 1–6 pers.</td></tr>
+                    <tr><td style="padding:8px">C-02</td><td style="padding:8px">Analyse sur-mesure (statistique / algorithmique)</td><td style="padding:8px">Forfait</td><td style="padding:8px">1 000</td><td style="padding:8px">Sur devis; ex : indicateurs, modèles</td></tr>
+                  </tbody>
+                </table>
+                </div>
+                <p style="margin-top:8px;font-size:13px;color:var(--muted)"><strong>Frais complémentaires :</strong> déplacements 0,60€/km, remboursement péages & hébergements, matériel refacturé. Travail en urgence : +25%.</p>
+              </section>
+
+              <section>
+                <h3>Mentions légales</h3>
+                <p>Raison sociale : Atelier<br>Représentant légal : Thomas Damore<br>Email : thomas.damore974@gmail.com</p>
+                <p>Adresse du siège, SIRET : &lt;à renseigner&gt;</p>
+              </section>
+
+              <section>
+                <h3>Contacts</h3>
+                <p>Contact principal : Thomas Damore — thomas.damore974@gmail.com</p>
+                <p>Contact facturation : Thomas Damore — thomas.damore974@gmail.com</p>
+              </section>
+          </div>
+        </div>
+
+        <!-- analyticsTab moved here (dissolved map-panel into container) -->
+        <div id="analyticsTab" class="hidden">
+              <!-- Top KPI row removed per request -->
+              <!-- Top small panels: vegetation charts + summary (styled as white cards) -->
+              <div class="analytics-top" style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start">
+                <div class="kpi-card" style="flex:0 0 140px;text-align:center;background:var(--bg);padding:8px;border-radius:8px;box-shadow:0 6px 18px rgba(16,24,40,0.04);min-height:236px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start">
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Répartition végétation (CLC)</div>
+                  <div class="chart-frame" style="height:200px;display:flex;align-items:center;justify-content:center"><canvas id="donutSmall" width="133" height="133" style="display:block;border-radius:6px;padding:4px;box-sizing:border-box;width:118.2px;height:118.2px"></canvas></div>
+                </div>
+                <div class="kpi-card" style="flex:0 0 140px;text-align:center;background:var(--bg);padding:8px;border-radius:8px;box-shadow:0 6px 18px rgba(16,24,40,0.04);min-height:236px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start">
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Répartition végétation (BD FORET)</div>
+                  <div class="chart-frame" style="height:200px;display:flex;align-items:center;justify-content:center"><canvas id="donutTFV" width="133" height="133" style="display:block;border-radius:6px;padding:4px;box-sizing:border-box;width:118.2px;height:118.2px"></canvas></div>
+                </div>
+                <div style="flex:1;min-width:0;background:var(--bg);padding:8px;border-radius:8px;box-shadow:0 6px 18px rgba(16,24,40,0.04)">
+                    <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Évolution des incendies par année</div>
+                    <div class="chart-frame" style="width:100%"><canvas id="incidentsYearChart" width="982" height="225" style="display:block;box-sizing:border-box;width:100%;height:200px;max-height:200px"></canvas></div>
+                  </div>
+              </div>
+
+                <!-- Full-size global charts (aggregated from MENSQ CSV parts) -->
+                <div class="analytics-fullcharts" style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+                  <div style="flex:1;min-width:220px;background:var(--bg);padding:8px;border-radius:8px;box-shadow:0 6px 18px rgba(16,24,40,0.04)">
+                    <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Précipitations annuelles (RR)</div>
+                    <div class="chart-frame"><canvas id="rrChartFull" width="450" height="220" style="display:block;box-sizing:border-box;width:100%;height:200px;max-height:200px"></canvas></div>
+                  </div>
+                  <div style="flex:1;min-width:220px;background:var(--bg);padding:8px;border-radius:8px;box-shadow:0 6px 18px rgba(16,24,40,0.04)">
+                    <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Température moyenne annuelle (TX)</div>
+                    <div class="chart-frame"><canvas id="txChartFull" width="450" height="220" style="display:block;box-sizing:border-box;width:100%;height:200px;max-height:200px"></canvas></div>
+                  </div>
+                  <div style="flex:1;min-width:220px;background:var(--bg);padding:8px;border-radius:8px;box-shadow:0 6px 18px rgba(16,24,40,0.04)">
+                    <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Humidité moyenne (UMM)</div>
+                    <div class="chart-frame"><canvas id="ummChartFull" width="450" height="220" style="display:block;box-sizing:border-box;width:100%;height:200px;max-height:200px"></canvas></div>
+                  </div>
+                </div>
+
+                <!-- removed duplicate incidentsYearChart block (now fills remaining space in the top row) -->
+
+              <!-- selector-grid removed from Analytics to simplify layout -->
+        </div>
+
+        <!-- left column removed; map-panel will occupy the main area -->
+      </main>
+
+      <!-- right-col removed per layout simplification -->
+    </div>
+  </div>
+  <script src="static/lib/leaflet/leaflet.js"></script>
+  <script src="static/lib/leaflet-heat.js"></script>
+  <script src="static/lib/chart.js"></script>
+  <script src="static/lib/papaparse.min.js"></script>
+  <script src="static/js/app_v2.js?v=2"></script>
+  <!-- grid overlay removed -->
+</body>
+</html>

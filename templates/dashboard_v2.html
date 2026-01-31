@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard V2 - Prométhée (v2)</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='lib/leaflet/leaflet.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style_v2.css') }}?v=2" />
+</head>
+<body>
+  <div id="map"></div>
+  <header class="topbar">
+    <div class="brand">Suivi des feux de forêt — Zone Prométhée</div>
+  </header>
+
+  <main class="container">
+    <section class="left">
+      <div class="card main-account">
+          <div class="selector-grid">
+            <!-- Row 1: selector at col1, empty cols 2-3, donutSmall at last col -->
+            <div style="grid-column:1 / span 2; grid-row:1;">
+              <div class="cell-header">
+                <div class="small">Sélectionner la commune :</div>
+                <div class="cell-controls">
+                  <button class="cell-export" title="Exporter PNG" aria-label="Exporter PNG">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <h2 id="loadedFile"></h2>
+                <div style="margin-top:6px">
+                  <div class="commune-input-row">
+                    <input id="communeInput" list="communeList" placeholder="Choisir commune ou saisir INSEE" class="data-select" />
+                    <button id="resetViewBtn" class="default-view-btn" title="Recentrer la carte sur la vue par défaut">Défaut</button>
+                    <datalist id="communeList"></datalist>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- KPI tiles: cols 3-5 -->
+            <div style="grid-column:3; grid-row:1;">
+              <div class="kpi">
+                <div class="kpi-title">Incendies totaux</div>
+                <div class="kpi-value" id="kpiIncendiesTotal">—</div>
+                <div class="kpi-sub">(sur la période)</div>
+              </div>
+            </div>
+            <div style="grid-column:4; grid-row:1;">
+              <div class="kpi">
+                <div class="kpi-title">Communes</div>
+                <div class="kpi-value" id="kpiCommunesCount">—</div>
+                <div class="kpi-sub">chargées</div>
+              </div>
+            </div>
+            <div style="grid-column:5; grid-row:1;">
+              <div class="kpi">
+                <div class="kpi-title">Stations</div>
+                <div class="kpi-value" id="kpiStationsTotal">—</div>
+                <div class="kpi-sub">dans la commune</div>
+              </div>
+            </div>
+            <div style="grid-column:9; grid-row:1;">
+              <div class="cell-header">
+                <div style="font-size:12px;color:#666;margin-bottom:6px">Répartition végétation (CLC)</div>
+                <div class="cell-controls">
+                  <button class="cell-export" title="Exporter PNG" aria-label="Exporter PNG">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <canvas id="donutSmall" width="160" height="120" style="display:block;border-radius:6px;padding:4px"></canvas>
+              </div>
+            </div>
+
+            <!-- Histogram moved to row 4, columns 1-3 to match the TX container size -->
+            <div style="grid-column:1 / span 3; grid-row:4;">
+              <div class="cell-header">
+                <div style="font-size:12px;color:#666;margin-bottom:6px">Evolution des incendies par année :</div>
+                <div class="cell-controls">
+                  <button class="cell-export" title="Exporter PNG" aria-label="Exporter PNG">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <canvas id="histChart" style="display:block;width:100%;height:160px;max-width:100%;box-sizing:border-box"></canvas>
+              </div>
+            </div>
+
+            <!-- Row 2 and 3 removed (no empty placeholders) -->
+
+            <!-- TFV donut moved up one row to sit above TX measures -->
+            <!-- Density distribution container: use KPI styling like 'Incendies totaux' -->
+            <div style="grid-column:6; grid-row:1;">
+              <div class="kpi">
+                <div class="kpi-title">Répartition densité urbaine (2021)</div>
+                <div class="kpi-value" id="densityLabel">—</div>
+                <div class="kpi-sub">classe</div>
+              </div>
+            </div>
+
+            <!-- Population 2022 container: use KPI styling like 'Incendies totaux' -->
+            <div style="grid-column:7; grid-row:1;">
+              <div class="kpi">
+                <div class="kpi-title">Population municipale 2022</div>
+                <div class="kpi-value" id="pop2022Label">—</div>
+                <div class="kpi-sub">hab.</div>
+              </div>
+            </div>
+
+            <div style="grid-column:9; grid-row:3;">
+              <div class="cell-header">
+                <div style="font-size:12px;color:#666;margin-bottom:6px">Répartition végétation (BD FORET)</div>
+                <div class="cell-controls">
+                  <button class="cell-export" title="Exporter PNG" aria-label="Exporter PNG">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <canvas id="donutTFV" width="160" height="160" style="display:block;border-radius:6px;padding:4px"></canvas>
+              </div>
+            </div>
+
+            <!-- Map legend placed in selector-grid at row 4, column 5 -->
+            <div style="grid-column:5; grid-row:4;">
+              <div class="cell-header">
+                <div style="font-size:12px;color:#666;margin-bottom:6px">Légende</div>
+                <div class="cell-controls">
+                  <button class="cell-export" title="Exporter PNG" aria-label="Exporter PNG">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <div id="mapLegendContainer" class="map-legend"> </div>
+              </div>
+            </div>
+
+            <!-- Row 5: TX chart and station count at left spanning first three columns -->
+            <!-- RR container: now occupy columns 1-3 on row 5 to match TX previous size -->
+            <div class="align-bottom" style="grid-column:1 / span 3; grid-row:5;">
+              <div class="cell-header">
+                <div style="font-size:13px;color:#444;margin-bottom:6px">Mesures précipitations sur la commune : <span id="stationCountRR">0</span></div>
+                <div class="cell-controls">
+                  <button class="cell-export" title="Exporter PNG" aria-label="Exporter PNG">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <div class="small">Cumul annuel RR (mm)</div>
+                <canvas id="rrChartSmall" width="420" height="160" style="display:block;width:100%;height:160px;box-sizing:border-box"></canvas>
+              </div>
+            </div>
+
+            <!-- TX container moved to columns 4-6 on row 5 -->
+            <div class="tx-container align-bottom" style="grid-column:4 / span 3; grid-row:5;">
+              <div class="cell-header">
+                <div style="font-size:13px;color:#444;margin-bottom:6px">Mesures des précipitations sur la commune : <span id="stationCount">0</span></div>
+                <div class="cell-controls">
+                  <button class="cell-export" title="Exporter PNG" aria-label="Exporter PNG">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <div class="small">Évolution TX (moyenne annuelle)</div>
+                <canvas id="txChartSmall" width="420" height="160" style="display:block;width:100%;height:160px;box-sizing:border-box"></canvas>
+              </div>
+            </div>
+
+            <!-- UMM container moved to columns 7-9 on row 5 -->
+            <div class="align-bottom" style="grid-column:7 / span 3; grid-row:5;">
+              <div class="cell-header">
+                <div style="font-size:13px;color:#444;margin-bottom:6px">Mesures l'humidité sur la commune : <span id="stationCountUMM">0</span></div>
+                <div class="cell-controls">
+                  <button class="cell-export" title="Exporter PNG" aria-label="Exporter PNG">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  <button class="cell-toggle" aria-expanded="true" aria-label="Basculer affichage"></button>
+                </div>
+              </div>
+              <div class="cell-body">
+                <div class="small">Évolution UMM (moyenne annuelle)</div>
+                <canvas id="ummChartSmall" width="420" height="160" style="display:block;width:100%;height:160px;box-sizing:border-box"></canvas>
+              </div>
+            </div>
+          </div>
+      </div>
+    </section>
+
+    <!-- right column removed: all controls are inside the selector grid to avoid duplication -->
+  </main>
+
+  <script src="{{ url_for('static', filename='lib/leaflet/leaflet.js') }}"></script>
+  <script src="{{ url_for('static', filename='lib/leaflet-heat.js') }}"></script>
+  <script src="{{ url_for('static', filename='lib/chart.js') }}"></script>
+  <script src="{{ url_for('static', filename='lib/papaparse.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app_v2.js') }}"></script>
+  <!-- grid overlay removed -->
+</body>
+</html>
