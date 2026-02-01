@@ -197,8 +197,12 @@ document.addEventListener('DOMContentLoaded', function(){
       // JSON file that we can host on GitHub Pages. Use resolveUrl so leading
       // slashes don't point to the domain root when hosted under a repo path.
       let res = null;
-      try{ res = await fetch(resolveUrl('/api/data-files')); }catch(_){}
-      if(!res || !res.ok){ try{ res = await fetch(resolveAbsoluteUrl('api/data-files.json')); }catch(_){} }
+      if(window && window.GEOJSON_CDN){
+        try{ res = await fetch(resolveAbsoluteUrl('api/data-files.json')); }catch(_){}
+      } else {
+        try{ res = await fetch(resolveUrl('/api/data-files')); }catch(_){ }
+        if(!res || !res.ok){ try{ res = await fetch(resolveAbsoluteUrl('api/data-files.json')); }catch(_){} }
+      }
       if(res && res.ok){
         const ct = (res.headers.get('content-type')||'').toLowerCase();
         if(ct.includes('application/json')){
