@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# large data files (served from GitHub/R2, not from Vercel)
+/public/static/data/
+
 # production
 /build
 

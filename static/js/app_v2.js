@@ -205,10 +205,15 @@ document.addEventListener('DOMContentLoaded', function(){
       }
       if(res && res.ok){
         const ct = (res.headers.get('content-type')||'').toLowerCase();
-        if(ct.includes('application/json')){
+        // GitHub raw can return text/plain for JSON; try parsing anyway.
+        try{
           files = await res.json();
-        } else {
-          console.warn('loadGeoJSONOverlays: /api/data-files returned non-JSON, falling back to default list');
+        }catch(e){
+          if(ct.includes('application/json')){
+            console.warn('loadGeoJSONOverlays: JSON parse failed despite JSON content-type', e);
+          } else {
+            console.warn('loadGeoJSONOverlays: non-JSON content-type and JSON parse failed, falling back', ct);
+          }
         }
       } else {
         console.warn('loadGeoJSONOverlays: /api/data-files returned', res ? res.status : 'no response');
