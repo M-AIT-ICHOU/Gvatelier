@@ -497,14 +497,14 @@ document.addEventListener('DOMContentLoaded', function(){
       // Try main GeoJSON first; if unavailable, fall back to a small placeholder
       let data = null;
       try{
-        const r = await fetch('static/data/communes_stats.geojson');
+        const r = await fetch(resolveAbsoluteUrl('static/data/communes_stats.geojson'));
         if(r.ok) data = await r.json();
         else console.warn('loadCommunesStats: static/data/communes_stats.geojson returned', r.status);
       }catch(e){ console.warn('Failed to fetch static/data/communes_stats.geojson', e); }
 
       if(!data){
         try{
-          const r2 = await fetch('static/data/communes_stats_placeholder.geojson');
+          const r2 = await fetch(resolveAbsoluteUrl('static/data/communes_stats_placeholder.geojson'));
           if(r2.ok) data = await r2.json();
           else console.warn('loadCommunesStats: placeholder returned', r2.status);
         }catch(e){ console.warn('Failed to fetch placeholder communes geojson', e); }
