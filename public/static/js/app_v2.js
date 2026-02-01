@@ -42,16 +42,32 @@ document.addEventListener('DOMContentLoaded', function(){
   async function initDataBaseFromApi(){
     try{
       if(window && window.GEOJSON_CDN) return;
+      const hardFallback = 'https://storage.googleapis.com/gv-ateliers-data/';
       const res = await fetch('/api/config', { cache: 'no-store' });
-      if(!res || !res.ok) return;
+      if(!res || !res.ok){
+        // If the API route isn't available (stale deployment / static hosting),
+        // still default to the configured GCS bucket.
+        window.GEOJSON_CDN = hardFallback;
+        console.debug('Configured GEOJSON_CDN fallback (no /api/config):', window.GEOJSON_CDN);
+        return;
+      }
       const cfg = await res.json();
       const base = cfg && (cfg.dataBase || cfg.geojsonCdn || cfg.GEOJSON_CDN || cfg.DATA_CDN);
       if(typeof base === 'string' && base.trim()){
         window.GEOJSON_CDN = base.trim();
         console.debug('Configured GEOJSON_CDN from /api/config:', window.GEOJSON_CDN);
+      } else {
+        // No configured base returned; fall back to the GCS bucket.
+        window.GEOJSON_CDN = hardFallback;
+        console.debug('Configured GEOJSON_CDN fallback (empty /api/config):', window.GEOJSON_CDN);
       }
     }catch(e){
-      // ignore; stay on local sample/placeholder data
+      try{
+        if(!(window && window.GEOJSON_CDN)){
+          window.GEOJSON_CDN = 'https://storage.googleapis.com/gv-ateliers-data/';
+          console.debug('Configured GEOJSON_CDN fallback (exception):', window.GEOJSON_CDN);
+        }
+      }catch(_){ }
     }
   }
 
