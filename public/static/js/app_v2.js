@@ -150,9 +150,16 @@ document.addEventListener('DOMContentLoaded', function(){
   function resolveUrl(url){
     if(!url) return url;
     if(/^https?:\/\//i.test(url)) return url;
-        // If user provided a CDN base, join it with the relative path
-        if(window && window.GEOJSON_CDN){
-          return String(window.GEOJSON_CDN).replace(/\/$/, '') + '/' + url.replace(/^\//, '');
+    // If user provided a CDN base, join it with the relative path.
+    // Use URL() to ensure proper percent-encoding (spaces, accents, etc).
+    if(window && window.GEOJSON_CDN){
+      try{
+        const base = String(window.GEOJSON_CDN);
+        const baseWithSlash = base.endsWith('/') ? base : (base + '/');
+        return new URL(url.replace(/^\//, ''), baseWithSlash).toString();
+      }catch(e){
+        return String(window.GEOJSON_CDN).replace(/\/$/, '') + '/' + url.replace(/^\//, '');
+      }
     }
     // Strip leading slash to make path repository-relative on GitHub Pages
     return url.replace(/^\//, '');
