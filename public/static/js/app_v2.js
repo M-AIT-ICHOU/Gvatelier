@@ -429,16 +429,21 @@ document.addEventListener('DOMContentLoaded', function(){
   (function loadIncidentsYearChart(){
     (async function(){
       try{
-        const incidentsRel = 'static/data/liste_incendies_ du_20_09_2022.csv';
+        const incidentsCandidates = [
+          'static/data/liste_incendies_du_20_09_2022.csv',
+          'static/data/liste_incendies_ du_20_09_2022.csv'
+        ];
         const sampleRel = 'static/data/liste_incendies_sample.csv';
-        const url = resolveAbsoluteUrl(incidentsRel);
         let resp = null;
-        try{ resp = await fetch(url, {cache:'no-store'}); }catch(e){ console.warn('Fetch failed for', url, e); }
-        if(!resp || !resp.ok){
-          try{ resp = await fetch(resolveAbsoluteUrl(incidentsRel), {cache:'no-store'}); }catch(e){}
+        let usedUrl = '';
+        for(const rel of incidentsCandidates){
+          const url = resolveAbsoluteUrl(rel);
+          usedUrl = url;
+          try{ resp = await fetch(url, {cache:'no-store'}); }catch(e){ console.warn('Fetch failed for', url, e); }
+          if(resp && resp.ok) break;
         }
         if(!resp || !resp.ok){
-          console.warn('Could not fetch incidents CSV at', url, resp && resp.status, '— falling back to sample CSV');
+          console.warn('Could not fetch incidents CSV at', usedUrl, resp && resp.status, '— falling back to sample CSV');
           try{
             const sresp0 = await fetch(resolveAbsoluteUrl(sampleRel));
             if(sresp0 && sresp0.ok){
@@ -1320,14 +1325,13 @@ document.addEventListener('DOMContentLoaded', function(){
     })();
     // load incidents CSV and update histogram for the selected commune (use Code INSEE and Année columns)
     try{
-      const incidentsFile = 'liste_incendies_ du_20_09_2022.csv';
-      Papa.parse(resolveAbsoluteUrl('static/data/' + encodeURIComponent(incidentsFile)), {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        delimiter: ';',
-        worker: false,
-        complete: function(results){ try{
+      const incidentsFiles = [
+        'liste_incendies_du_20_09_2022.csv',
+        'liste_incendies_ du_20_09_2022.csv'
+      ];
+      const incidentsUrls = incidentsFiles.map(f => resolveAbsoluteUrl('static/data/' + encodeURIComponent(f)));
+      function handleIncidentsResults(results){
+        try{
           const rows = results && results.data ? results.data : [];
           const fields = (results && results.meta && results.meta.fields) ? results.meta.fields.map(f=>String(f).trim()) : (rows.length ? Object.keys(rows[0]).map(f=>String(f).trim()) : []);
           const inseeField = fields.find(f=>f.toLowerCase().includes('insee')) || fields.find(f=>/code.*insee/i.test(f));
@@ -1342,20 +1346,42 @@ document.addEventListener('DOMContentLoaded', function(){
           const labels = years.map(y=>y);
           const data = years.map(y=> yearCounts[y]);
           console.debug('Incidents per year for INSEE', insee, labels, data);
-            try{
-              if(histChart){
-                histChart.data = {labels: labels, datasets:[{label:'Incendies', data: data, backgroundColor: labels.map(()=>'#ef4444')} ] };
-                try{ histChart.update(); }catch(e){ console.warn('histChart.update failed', e); }
-                try{ const totalInc = (data || []).reduce((a,b)=>a+(Number(b)||0),0); const incEl = document.getElementById('kpiIncendiesTotal') || document.getElementById('kpiTotalIncidents'); if(incEl) incEl.innerText = totalInc; const resumeIncLocal = document.getElementById('resume_kpiIncendiesTotal'); if(resumeIncLocal) resumeIncLocal.innerText = totalInc; }catch(e){}
-              } else {
+          try{
+            if(histChart){
+              histChart.data = {labels: labels, datasets:[{label:'Incendies', data: data, backgroundColor: labels.map(()=>'#ef4444')} ] };
+              try{ histChart.update(); }catch(e){ console.warn('histChart.update failed', e); }
+              try{ const totalInc = (data || []).reduce((a,b)=>a+(Number(b)||0),0); const incEl = document.getElementById('kpiIncendiesTotal') || document.getElementById('kpiTotalIncidents'); if(incEl) incEl.innerText = totalInc; const resumeIncLocal = document.getElementById('resume_kpiIncendiesTotal'); if(resumeIncLocal) resumeIncLocal.innerText = totalInc; }catch(e){}
+            } else {
               // create on-the-fly if initial creation failed
               const el = document.getElementById('histChart');
               if(el){ try{ const ctx = el.getContext('2d'); window._tempHist = new Chart(ctx, {type:'bar', data:{labels:labels, datasets:[{label:'Incendies', data:data, backgroundColor: labels.map(()=>'#ef4444')} ]}, options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}}); }catch(e){ console.warn('Could not create fallback hist chart', e); } }
               try{ const totalInc = (data || []).reduce((a,b)=>a+(Number(b)||0),0); const incEl = document.getElementById('kpiIncendiesTotal') || document.getElementById('kpiTotalIncidents'); if(incEl) incEl.innerText = totalInc; }catch(e){}
             }
           }catch(e){ console.warn('Error updating histChart', e); }
-        }catch(e){ console.error('Error processing incidents CSV', e); } }, error: function(err){ console.error('PapaParse incidents error', err); }
-      });
+        }catch(e){ console.error('Error processing incidents CSV', e); }
+      }
+
+      function parseIncidentsUrlAt(index){
+        if(index >= incidentsUrls.length){
+          console.warn('Could not load incidents CSV from any candidate URL');
+          return;
+        }
+        const url = incidentsUrls[index];
+        Papa.parse(url, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          delimiter: ';',
+          worker: false,
+          complete: function(results){ handleIncidentsResults(results); },
+          error: function(err){
+            console.warn('PapaParse incidents failed for', url, err);
+            parseIncidentsUrlAt(index + 1);
+          }
+        });
+      }
+
+      parseIncidentsUrlAt(0);
     }catch(e){ console.warn('Could not load incidents CSV', e); }
   }catch(err){ console.error(err); alert('Erreur affichage commune: '+err.message);} }
 

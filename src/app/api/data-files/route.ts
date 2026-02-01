@@ -5,7 +5,8 @@ export const runtime = "edge";
 export async function GET() {
   const base =
     process.env.GEOJSON_CDN ||
-    "https://raw.githubusercontent.com/M-AIT-ICHOU/Gv-Atelier/main/";
+    process.env.DATA_CDN ||
+    "https://storage.googleapis.com/gv-ateliers-data/";
 
   try {
     const url = new URL("api/data-files.json", base).toString();
