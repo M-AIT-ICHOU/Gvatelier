@@ -37,6 +37,24 @@ document.addEventListener('DOMContentLoaded', function(){
     window.addEventListener('unhandledrejection', function(ev){ try{ console.error('Unhandled promise rejection', ev.reason); showJsError(ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason)); }catch(_){}});
   }catch(e){ /* ignore if host environment restricts */ }
 
+  // If running behind Next.js, allow configuring an external data base via Vercel env
+  // (returned by /api/config). This keeps large CSV/GeoJSON out of the deployment.
+  async function initDataBaseFromApi(){
+    try{
+      if(window && window.GEOJSON_CDN) return;
+      const res = await fetch('/api/config', { cache: 'no-store' });
+      if(!res || !res.ok) return;
+      const cfg = await res.json();
+      const base = cfg && (cfg.dataBase || cfg.geojsonCdn || cfg.GEOJSON_CDN || cfg.DATA_CDN);
+      if(typeof base === 'string' && base.trim()){
+        window.GEOJSON_CDN = base.trim();
+        console.debug('Configured GEOJSON_CDN from /api/config:', window.GEOJSON_CDN);
+      }
+    }catch(e){
+      // ignore; stay on local sample/placeholder data
+    }
+  }
+
   
 
   // Init map
@@ -255,6 +273,8 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   // load overlays (non-blocking)
+  // First, try to bootstrap a CDN base from /api/config (so large datasets can live elsewhere)
+  await initDataBaseFromApi();
   loadGeoJSONOverlays();
 
   // Populate overlay dropdown and wire single-overlay selection (restore dropdown behavior)
@@ -408,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function(){
         let resp = null;
         try{ resp = await fetch(url, {cache:'no-store'}); }catch(e){ console.warn('Fetch failed for', url, e); }
         if(!resp || !resp.ok){
-          try{ resp = await fetch(incidentsRel, {cache:'no-store'}); }catch(e){}
+          try{ resp = await fetch(resolveAbsoluteUrl(incidentsRel), {cache:'no-store'}); }catch(e){}
         }
         if(!resp || !resp.ok){
           console.warn('Could not fetch incidents CSV at', url, resp && resp.status, '— falling back to sample CSV');
