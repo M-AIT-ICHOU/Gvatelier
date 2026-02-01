@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" preserveAspectRatio="xMidYMid meet">
+  <style>
+    .title { font: bold 22px sans-serif; }
+    .box { fill:#ffffff; stroke:#2b6cb0; stroke-width:2; rx:10; }
+    .box-strong { fill:#f1f5f9; stroke:#1e40af; stroke-width:2; rx:10; }
+    .text { font: 14px sans-serif; fill:#0f172a; }
+    .role { font: bold 13px sans-serif; fill:#062e5b; }
+    .small { font: 12px sans-serif; fill:#334155; }
+    .line { stroke:#334155; stroke-width:2; }
+  </style>
+
+  <g transform="translate(0,0)">
+  <rect x="220" y="20" width="760" height="60" fill="#e6eef8" stroke="#2b6cb0" rx="8" />
+  <text x="600" y="50" text-anchor="middle" dominant-baseline="middle" class="title">Organigramme - bureau d'étude PyroPixel</text>
+
+  <!-- Direction -->
+  <g transform="translate(300,110)">
+    <rect class="box-strong" x="0" y="0" width="600" height="70" />
+    <text x="300" y="28" text-anchor="middle" class="role">Direction</text>
+    <text x="300" y="48" text-anchor="middle" class="small">Directeur du bureau d'études — Pilotage &amp; validation scientifique</text>
+  </g>
+
+  <!-- Lines down from Direction -->
+  <line x1="600" y1="180" x2="600" y2="240" class="line" />
+
+  <!-- Pôle boxes row -->
+  <!-- Pôle Scientifique -->
+  <g transform="translate(40,240)">
+    <rect class="box" x="0" y="0" width="350" height="140" />
+    <text x="175" y="24" text-anchor="middle" class="role">Pôle Scientifique &amp; Analyse</text>
+    <text x="175" y="48" text-anchor="middle" class="small">Resp. Scientifique</text>
+
+    <text x="20" y="78" class="text">• Équipe Analyse Biomasse (2–3)</text>
+    <text x="20" y="98" class="small">Inventaire, échantillonnage, labo</text>
+    <text x="20" y="118" class="text">• Spécialiste Comportement du Feu (1–2)</text>
+  </g>
+
+  <!-- Pôle SIG & Données -->
+  <g transform="translate(425,240)">
+    <rect class="box" x="0" y="0" width="350" height="140" />
+    <text x="175" y="24" text-anchor="middle" class="role">Pôle SIG &amp; Données</text>
+    <text x="175" y="48" text-anchor="middle" class="small">Resp. SIG</text>
+
+    <text x="20" y="78" class="text">• Analyste SIG (1–2)</text>
+    <text x="20" y="98" class="small">Cartographie combustible, couches territoriales</text>
+    <text x="20" y="118" class="text">• Data Scientist (1), Télédétection (1)</text>
+  </g>
+
+  <!-- Pôle Risques & Prévention -->
+  <g transform="translate(810,240)">
+    <rect class="box" x="0" y="0" width="350" height="140" />
+    <text x="175" y="24" text-anchor="middle" class="role">Pôle Risques &amp; Prévention</text>
+    <text x="175" y="48" text-anchor="middle" class="small">Resp. Risques</text>
+
+    <text x="20" y="78" class="text">• Analyste Risque Feu (1–2)</text>
+    <text x="20" y="98" class="small">Vulnérabilité, probabilités d'allumage</text>
+    <text x="20" y="118" class="text">• Chargé Recommandations (1)</text>
+  </g>
+
+  <!-- Connectors from Direction to poles -->
+  <line x1="600" y1="240" x2="600" y2="240" class="line" stroke-width="0" />
+
+  <line x1="540" y1="180" x2="215" y2="240" class="line" />
+  <line x1="600" y1="180" x2="600" y2="240" class="line" />
+  <line x1="660" y1="180" x2="985" y2="240" class="line" />
+
+  <!-- Pôle Opérationnel & Support row under the first row -->
+  <g transform="translate(160,420)">
+    <rect class="box" x="0" y="0" width="430" height="120" />
+    <text x="215" y="24" text-anchor="middle" class="role">Pôle Opérationnel &amp; Relations Territoire</text>
+    <text x="215" y="48" text-anchor="middle" class="small">Resp. Territoire &amp; Partenariats</text>
+
+    <text x="20" y="78" class="text">• Coordinateur Terrain (1)</text>
+    <text x="20" y="98" class="text">• Chargé de Liaison (1)</text>
+  </g>
+
+  <g transform="translate(650,420)">
+    <rect class="box" x="0" y="0" width="350" height="120" />
+    <text x="175" y="24" text-anchor="middle" class="role">Support &amp; Administration</text>
+    <text x="175" y="48" text-anchor="middle" class="small">Finances, gestion, qualité</text>
+
+    <text x="20" y="78" class="text">• Resp. Administratif &amp; Financier (1)</text>
+    <text x="20" y="98" class="text">• Assistant(e) / Gestionnaire de projet (1)</text>
+  </g>
+
+  <!-- Connectors from upper poles to lower poles -->
+  <line x1="215" y1="380" x2="215" y2="420" class="line" />
+  <line x1="600" y1="380" x2="775" y2="420" class="line" />
+  <line x1="985" y1="380" x2="775" y2="420" class="line" />
+
+  <!-- Footer notes removed to tighten layout -->
+  </g>
+
+</svg>

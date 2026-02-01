@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800">
+  <style>
+    .title{font:bold 28px sans-serif; fill:#22543d}
+    .h{font:bold 18px sans-serif; fill:#0f172a}
+    .p{font:14px sans-serif; fill:#264c3b}
+  </style>
+  <rect x="20" y="20" width="1160" height="760" rx="12" fill="#f6fffb" stroke="#dbeede"/>
+  <text x="60" y="70" class="title">Responsable Risques &amp; Prévention</text>
+
+  <text x="60" y="120" class="h">Mission</text>
+  <text x="60" y="150" class="p">Évaluer la vulnérabilité et le risque d'incendie, proposer mesures de prévention et plans de réduction du risque pour les territoires PACA.</text>
+
+  <text x="60" y="220" class="h">Responsabilités clés</text>
+  <text x="60" y="250" class="p">- Évaluation vulnérabilité des infrastructures et populations.</text>
+  <text x="60" y="275" class="p">- Élaboration de prescriptions de gestion du combustible et mesures préventives.</text>
+
+  <text x="60" y="340" class="h">Profil</text>
+  <text x="60" y="370" class="p">Master en gestion des risques, environnement ou aménagement territorial. Expérience en évaluation de risques naturels souhaitée.</text>
+
+  <text x="60" y="440" class="h">Compétences</text>
+  <text x="60" y="470" class="p">Analyse risque, cartographie, communication avec parties prenantes, réglementation territoriale.</text>
+</svg>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800">
+  <style>
+    .title{font:bold 28px sans-serif; fill:#0b4a6f}
+    .h{font:bold 18px sans-serif; fill:#0f172a}
+    .p{font:14px sans-serif; fill:#2b3e50}
+  </style>
+  <rect x="20" y="20" width="1160" height="760" rx="12" fill="#f7feff" stroke="#dbeef7"/>
+  <text x="60" y="70" class="title">Responsable SIG &amp; Données</text>
+
+  <text x="60" y="120" class="h">Mission</text>
+  <text x="60" y="150" class="p">Coordonner la production cartographique et la gestion des données (satellites, LIDAR, couches administratives) pour les cartes de combustible et d'inflammabilité.</text>
+
+  <text x="60" y="220" class="h">Responsabilités clés</text>
+  <text x="60" y="250" class="p">- Production de cartes thématiques et indicateurs (NDVI, classes de combustible).</text>
+  <text x="60" y="275" class="p">- Mise en place de bases de données et API pour diffusion.</text>
+
+  <text x="60" y="340" class="h">Profil</text>
+  <text x="60" y="370" class="p">Licence/Master en SIG, géomatique ou télédétection. Maîtrise d'outils QGIS, ArcGIS, Python pour géodonnées.</text>
+
+  <text x="60" y="440" class="h">Compétences</text>
+  <text x="60" y="470" class="p">Traitement d'images satellitaires, LIDAR, SQL/spatial, APIs, cartographie web.</text>
+
+  <text x="60" y="540" class="h">Interactions</text>
+  <text x="60" y="570" class="p">Travaille étroitement avec le Pôle Scientifique et le Spécialiste Feu pour produire les cartes d'inflammabilité.</text>
+</svg>

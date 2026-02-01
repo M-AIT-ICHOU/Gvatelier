@@ -1,7 +1,0 @@
-Assurance — Atelier
-
-Assurance responsabilité civile professionnelle : <nom compagnie>
-Numéro de police : <à renseigner>
-Période de validité : <à renseigner>
-
-Emplacement des certificats originaux : <chemin sécurisé / dossier chiffré>
