@@ -127,7 +127,17 @@ document.addEventListener('DOMContentLoaded', function(){
         }catch(e){}
         try{ const mc = document.getElementById('map'); if(mc) mc.style.display = 'none'; if(window.map) map.invalidateSize(); }catch(e){}
       }
-      function showAnalytics(){ clearAll(); anBtn.classList.add('active'); anBtn.setAttribute('aria-selected','true'); if(aTab) aTab.classList.remove('hidden'); if(rightCol) rightCol.classList.remove('hidden'); try{ const mc = document.getElementById('map'); if(mc) mc.style.display = 'none'; }catch(e){} try{ refreshAnalyticsCharts(); }catch(_){ } }
+      function showAnalytics(){
+        clearAll();
+        anBtn.classList.add('active');
+        anBtn.setAttribute('aria-selected','true');
+        if(aTab) aTab.classList.remove('hidden');
+        if(rightCol) rightCol.classList.remove('hidden');
+        try{ const mc = document.getElementById('map'); if(mc) mc.style.display = 'none'; }catch(e){}
+        try{ if(typeof startGlobalMeteoChartsLoad === 'function') startGlobalMeteoChartsLoad(); }catch(_){ }
+        try{ if(typeof startIncidentsYearChartLoad === 'function') startIncidentsYearChartLoad(); }catch(_){ }
+        try{ refreshAnalyticsCharts(); }catch(_){ }
+      }
       function refreshAnalyticsCharts(){
         // allow layout to settle then resize/update charts initialized while hidden
         setTimeout(function(){
@@ -385,8 +395,10 @@ document.addEventListener('DOMContentLoaded', function(){
   const txChartFull = makeEmptyChart('txChartFull', {type:'line', data:{labels:[], datasets:[{label:'Mean TX (°C)', data:[], borderColor:'#10b981', backgroundColor:'#10b98166', fill:false}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:false}}}});
   const ummChartFull = makeEmptyChart('ummChartFull', {type:'line', data:{labels:[], datasets:[{label:'UMM', data:[], borderColor:'#ff6600', backgroundColor:'#ff660066', fill:false}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:false}}}});
 
-  // Load and aggregate MENSQ CSV parts to populate the full charts
-  (function loadGlobalMeteoCharts(){
+  let _globalMeteoChartsStarted = false;
+  function startGlobalMeteoChartsLoad(){
+    if(_globalMeteoChartsStarted) return;
+    _globalMeteoChartsStarted = true;
     try{
       const parts = [
         'static/data/MENSQ_all_1950_2023_cleaned_part1.csv',
@@ -415,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function(){
             if(!r.ok) continue;
             const text = await r.text();
             if(!text) continue;
-            await new Promise((resolve, reject) => {
+            await new Promise((resolve) => {
               try{
                 Papa.parse(text, {
                   header: true,
@@ -429,7 +441,6 @@ document.addEventListener('DOMContentLoaded', function(){
             });
           }catch(e){ console.warn('Fetch failed for global part', p, e); }
         }
-        // finalize series
         const years = Object.keys(yearAgg).sort((a,b)=>{ const na=Number(a), nb=Number(b); if(!isNaN(na)&&!isNaN(nb)) return na-nb; return a.localeCompare(b); });
         const labels = years;
         const txData = years.map(y=> { const v = yearAgg[y]; return (v && v.txCount) ? (v.txSum / v.txCount) : NaN; });
@@ -439,10 +450,13 @@ document.addEventListener('DOMContentLoaded', function(){
         try{ if(rrChartFull){ rrChartFull.data = {labels: labels, datasets:[{label:'RR (mm)', data: rrData, borderColor:'#3b82f6', backgroundColor:'#3b82f633', fill:true}]}; rrChartFull.update(); } }catch(e){}
         try{ if(ummChartFull){ ummChartFull.data = {labels: labels, datasets:[{label:'UMM', data: ummData, borderColor:'#ff6600', backgroundColor:'#ff660033', fill:false}]}; ummChartFull.update(); } }catch(e){}
       })();
-    }catch(e){ console.warn('loadGlobalMeteoCharts failed', e); }
-  })();
-  // Load global incidents CSV and populate the incidentsYearChart
-  (function loadIncidentsYearChart(){
+    }catch(e){ console.warn('startGlobalMeteoChartsLoad failed', e); }
+  }
+
+  let _incidentsYearChartStarted = false;
+  function startIncidentsYearChartLoad(){
+    if(_incidentsYearChartStarted) return;
+    _incidentsYearChartStarted = true;
     (async function(){
       try{
         const incidentsCandidates = [
@@ -455,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function(){
         for(const rel of incidentsCandidates){
           const url = resolveAbsoluteUrl(rel);
           usedUrl = url;
-          try{ resp = await fetch(url, {cache:'no-store'}); }catch(e){ console.warn('Fetch failed for', url, e); }
+          try{ resp = await fetch(url); }catch(e){ console.warn('Fetch failed for', url, e); }
           if(resp && resp.ok) break;
         }
         if(!resp || !resp.ok){
@@ -476,8 +490,6 @@ document.addEventListener('DOMContentLoaded', function(){
         let text = await resp.text();
         if(!text || !text.length) return;
 
-        // If the server returns a Git LFS pointer (common when large files aren't published),
-        // fall back to a small sample CSV bundled with the repo so the chart can still render.
         if(text.trim().startsWith('version https://git-lfs.github.com/spec/v1')){
           console.warn('Incidents CSV appears to be a Git LFS pointer — falling back to sample CSV');
           try{
@@ -487,7 +499,6 @@ document.addEventListener('DOMContentLoaded', function(){
           }catch(e){ console.warn('Failed to fetch sample CSV', e); return; }
         }
 
-        // parse and populate the chart; if parsing yields no rows, try the sample file as a fallback
         function parseAndPopulate(csvText){
           return new Promise((resolve)=>{
             try{
@@ -526,7 +537,6 @@ document.addEventListener('DOMContentLoaded', function(){
 
         let ok = await parseAndPopulate(text);
         if(!ok){
-          // try sample
           try{
             const sresp2 = await fetch(resolveAbsoluteUrl(sampleRel));
             if(sresp2 && sresp2.ok){ const st = await sresp2.text(); await parseAndPopulate(st); }
@@ -534,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function(){
         }
       }catch(e){ console.warn('Could not load global incidents CSV', e); }
     })();
-  })();
+  }
 
   // Density key and categories (we display only the label value for selected commune)
   let densityKey = null;
@@ -553,27 +563,37 @@ document.addEventListener('DOMContentLoaded', function(){
   const communesIndex = {}; // insee -> feature properties & geometry
   const communeLabelIndex = {}; // normalized label -> insee
 
+  let communesStatsLevel = 'none'; // 'placeholder' | 'full'
+  let communesLoadPromise = null;
+  let communesFullLoadFailed = false;
+  let didFitToCommunes = false;
+
   function normalizeStr(s){ if(!s) return ''; try{ return String(s).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(e){ return String(s).trim().toLowerCase(); } }
 
-  async function loadCommunesStats(){
+  async function loadCommunesStats(options){
     try{
-      // Try main GeoJSON first; if unavailable, fall back to a small placeholder
-      let data = null;
-      try{
-        const r = await fetch(resolveAbsoluteUrl('static/data/communes_stats.geojson'));
-        if(r.ok) data = await r.json();
-        else console.warn('loadCommunesStats: static/data/communes_stats.geojson returned', r.status);
-      }catch(e){ console.warn('Failed to fetch static/data/communes_stats.geojson', e); }
+      const opts = options || {};
+      // Load small placeholder first by default (fast initial paint), upgrade to full only on demand.
+      const tryFiles = (function(){
+        if(opts.forceFull) return ['static/data/communes_stats.geojson'];
+        if(opts.preferPlaceholder) return ['static/data/communes_stats_placeholder.geojson','static/data/communes_stats.geojson'];
+        return ['static/data/communes_stats.geojson','static/data/communes_stats_placeholder.geojson'];
+      })();
 
-      if(!data){
+      let data = null;
+      let loadedRel = '';
+      for(const rel of tryFiles){
         try{
-          const r2 = await fetch(resolveAbsoluteUrl('static/data/communes_stats_placeholder.geojson'));
-          if(r2.ok) data = await r2.json();
-          else console.warn('loadCommunesStats: placeholder returned', r2.status);
-        }catch(e){ console.warn('Failed to fetch placeholder communes geojson', e); }
+          const r = await fetch(resolveAbsoluteUrl(rel));
+          if(r.ok){ data = await r.json(); loadedRel = rel; break; }
+          console.warn('loadCommunesStats: fetch returned', r.status, rel);
+        }catch(e){ console.warn('Failed to fetch', rel, e); }
       }
 
       if(!data) throw new Error('Could not fetch communes_stats.geojson or placeholder');
+
+      communesStatsLevel = /placeholder/i.test(loadedRel) ? 'placeholder' : 'full';
+
       // quick sanity check on coordinates to detect CRS mismatch
       try{
         const sample = (data.features && data.features[0] && data.features[0].geometry && data.features[0].geometry.coordinates) ? data.features[0].geometry.coordinates : null;
@@ -591,6 +611,12 @@ document.addEventListener('DOMContentLoaded', function(){
         }
       }catch(e){ console.warn('Could not verify communes_stats.geojson coordinates', e); }
       communesData = data;
+
+      // reset indexes to avoid stale/duplicate entries when upgrading placeholder -> full
+      try{ for(const k in communesIndex){ delete communesIndex[k]; } }catch(_){ }
+      try{ for(const k in communeLabelIndex){ delete communeLabelIndex[k]; } }catch(_){ }
+      try{ if(communeList) communeList.innerHTML = ''; }catch(_){ }
+
       // sort features by numeric INSEE (fall back to name when absent)
       const features = (data.features || []).slice().sort((a,b)=>{
         const pa = a.properties || {};
@@ -816,6 +842,17 @@ document.addEventListener('DOMContentLoaded', function(){
       // show communes layer by default
       communesLayer.addTo(map);
       console.debug('Loaded communes_stats.geojson: features=', data.features ? data.features.length : 0);
+
+      // Fit map to layer only on the initial load (avoid snapping view on upgrades)
+      try{
+        if(opts.fitOnLoad && !didFitToCommunes && communesLayer && typeof communesLayer.getBounds === 'function'){
+          const b = communesLayer.getBounds();
+          if(b && b.isValid && b.isValid()){
+            map.fitBounds(b.pad(0.03));
+            didFitToCommunes = true;
+          }
+        }
+      }catch(e){ console.warn('Could not fit map to communes layer bounds', e); }
       // set KPI tiles if present
       try{
         const commCountEl = document.getElementById('kpiCommunesCount');
@@ -831,18 +868,21 @@ document.addEventListener('DOMContentLoaded', function(){
     }catch(e){ console.error('Failed to load communes_stats.geojson', e); }
   }
 
-  await loadCommunesStats();
+  function ensureCommunesLoaded(){
+    if(communesLoadPromise) return communesLoadPromise;
+    communesLoadPromise = loadCommunesStats({preferPlaceholder:true, fitOnLoad:true});
+    return communesLoadPromise;
+  }
 
-  // Center default view on the loaded communes layer (only once)
-  try{
-    if(communesLayer && typeof communesLayer.getBounds === 'function'){
-      const b = communesLayer.getBounds();
-      if(b && b.isValid && b.isValid()){
-        // pad slightly so features are not at the edges
-        map.fitBounds(b.pad(0.03));
-      }
-    }
-  }catch(e){ console.warn('Could not fit map to communes layer bounds', e); }
+  function ensureFullCommunesLoaded(){
+    if(communesStatsLevel === 'full') return Promise.resolve(communesData);
+    if(communesFullLoadFailed) return Promise.reject(new Error('Full communes GeoJSON load previously failed'));
+    communesLoadPromise = loadCommunesStats({forceFull:true, fitOnLoad:false});
+    return communesLoadPromise.catch(function(e){ communesFullLoadFailed = true; throw e; });
+  }
+
+  // Kick off communes load without blocking the rest of the dashboard startup.
+  try{ ensureCommunesLoaded(); }catch(_){ }
 
   function yearFromRow(row){
     const keys = Object.keys(row);
@@ -1015,8 +1055,20 @@ document.addEventListener('DOMContentLoaded', function(){
     }catch(e){ console.warn('clearCacheForCommune failed', e); }
   }
 
-  function showCommuneByInsee(insee){ try{
-    const fe = communesIndex[insee]; if(!fe) return alert('Commune INSEE non trouvée: '+insee);
+  function showCommuneByInsee(insee){
+    (async function(){
+      try{
+        // If communes are not loaded yet, load placeholder first then retry.
+        if(!communesData || !communesIndex || Object.keys(communesIndex).length === 0){
+          try{ await ensureCommunesLoaded(); }catch(e){ console.warn('Could not load communes (placeholder)', e); }
+        }
+        // Upgrade to full dataset when user actually selects a commune (best perf/UX tradeoff).
+        if(communesStatsLevel !== 'full' && !communesFullLoadFailed){
+          try{ await ensureFullCommunesLoaded(); }catch(e){ console.warn('Full communes GeoJSON load failed; continuing with placeholder', e); }
+        }
+
+        const fe = communesIndex[insee];
+        if(!fe) return alert('Commune INSEE non trouvée: '+insee);
     clearSelectedCommune();
     // clear any cached station parsing/results before loading new commune
     try{ clearCacheForCommune(); }catch(e){}
@@ -1201,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', function(){
             // abort previous fetch if any
             try{ if(currentFetchController){ try{ currentFetchController.abort(); }catch(_){ } currentFetchController = null; } }catch(_){ }
             currentFetchController = new AbortController();
-            const r = await fetch(p, {cache:'no-store', signal: currentFetchController.signal});
+            const r = await fetch(p, {cache:'force-cache', signal: currentFetchController.signal});
             if(!r || !r.ok){ console.debug('Part not available:', p); continue; }
             const t = await r.text();
             if(t && t.trim().startsWith('version https://git-lfs.github.com/spec/v1')){ console.warn('Part appears to be LFS pointer, skipping', p); continue; }
@@ -1399,7 +1451,12 @@ document.addEventListener('DOMContentLoaded', function(){
 
       parseIncidentsUrlAt(0);
     }catch(e){ console.warn('Could not load incidents CSV', e); }
-  }catch(err){ console.error(err); alert('Erreur affichage commune: '+err.message);} }
+      }catch(err){
+        console.error('showCommuneByInsee failed', err);
+        alert('Erreur affichage commune: ' + (err && err.message ? err.message : String(err)));
+      }
+    })();
+  }
 
   function tempToColor(temp){ if(isNaN(temp)) return '#888888'; const t = Math.max(-10, Math.min(35, temp)); const ratio = (t + 10) / (35 + 10); const hue = (1 - ratio) * 240; return `hsl(${hue.toFixed(0)},75%,45%)`; }
 
